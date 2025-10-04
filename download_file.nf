@@ -33,6 +33,7 @@ process countSeq {
 }
 
 workflow {
-    download_channel = downloadFile()
-    countSeq(download_channel)
+    //download_channel = downloadFile()
+    //countSeq(download_channel)
+    downloadFile | countSeq
 }
