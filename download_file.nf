@@ -15,6 +15,19 @@ process downloadFile {
         """
 }
 
+process countSeq {
+    publishDir "${projectDir}/output", mode: "copy", overwrite : true
+    input:
+        path fastafile
+    output:
+        path "num_seqs.txt"
+    script:
+        """
+        grep ">" ${fastafile} | wc -l > num_seqs.txt
+        """
+}
+
 workflow {
-    downloadFile()
+    download_channel = downloadFile()
+    countSeq(download_channel)
 }
