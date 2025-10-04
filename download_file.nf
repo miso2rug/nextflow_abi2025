@@ -4,8 +4,11 @@ nextflow.enable.dsl=2
 params.out = "${projectDir}/output"
 // params - implicit variable, similar to dictionary, can hand over flags like "nextflow script.nf --out testpath if params has key for that (params.out, can be initilased for cases where no flag is handed over params.out = "path"
 params.url = "https://tinyurl.com/cqbatch1"
+params.store = "${projectDir}/cache"
 
 process downloadFile {
+    storeDir params.store
+    // caches the output: only file name, not content -> will be checked before process is rerun and if output is present in storeDir processrun is skipped
     publishDir params.out, mode: "copy", overwrite : true
     // mode copy actually copies the output to the def. pubDir, otherwise its just linked to the resp. workDir
     // projectDir is a predefined variable translating to the absolute path of where the x.nf script is stored (same as baseDir)
