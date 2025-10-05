@@ -54,11 +54,24 @@ process countRepeats {
     input:
         path fastafile
     output:
-        path "${fastafile.getSimpleName()}_GCCGCG_count.txt"
+        path "${fastafile.getSimpleName()}_gccgcg_count.txt"
     script:
         """
-        grep "GCCGCG" -o ${fastafile} | wc -l > ${fastafile.getSimpleName()}_GCCGCG_count.txt
+        grep "GCCGCG" -o ${fastafile} | wc -l > ${fastafile.getSimpleName()}_gccgcg_count.txt
         """
+}
+
+process makeSummary {
+    publishDir params.out, mode: "copy", overwrite : true
+    input:
+        path fastafiles
+    output:
+        path "report.csv"
+    script:
+        """
+        for f in \$(${fastafiles} | ls seq*.txt); do echo \$f | cut -d "_" -f 1,2 -z; echo -n ": "; cat \$f; done > report.csv
+        """
+
 }
 
 workflow {
@@ -68,5 +81,7 @@ workflow {
     // sequence_ch.view() - puts out content of channel in terminal, mostly used for trouble shooting
     // channel.flatten() - seperates bundeled multi-file output into single files before next process
     countBases(sequence_ch)
-    countRepeats(sequence_ch)
+    repeats_ch = countRepeats(sequence_ch).collect()
+    // channel.collect() reverse functional to .flatten()
+    makeSummary(repeats_ch)
 }
