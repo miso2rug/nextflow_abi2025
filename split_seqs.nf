@@ -1,5 +1,6 @@
 params.out = "${projectDir}/output"
 params.url = "https://tinyurl.com/cqbatch1"
+params.prefix = "sequence_"
 
 process downloadFile {
     publishDir params.out, mode: "copy", overwrite : true
@@ -28,10 +29,10 @@ process splitSeqs {
     input:
         path infile
     output:
-        path "sequence_*.fasta"
+        path "${params.prefix}*.fasta"
     script:
         """
-        split -l 2 -d --additional-suffix .fasta ${infile} sequence_
+        split -l 2 -d --additional-suffix .fasta ${infile} ${params.prefix}
 
         """
 }
