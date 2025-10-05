@@ -42,19 +42,22 @@ process countBases {
     input:
         path fastafile
     output:
-        path "basecount.txt"
+        path "${fastafile.getSimpleName()}_basecount.txt"
     script:
         """
-        tail -n 1 ${fastafile} | wc -m > basecount.txt
+        tail -n 1 ${fastafile} | wc -m > ${fastafile.getSimpleName()}_basecount.txt
         """
 }
-
+        // .getSimpleName() extracts name name before .fileextension
 
 workflow {
     download_ch = downloadFile()
     countSeqs(download_ch)
     sequence_ch = splitSeqs(download_ch)
-    sequence_ch.view()
+    // sequence_ch.view()
     // puts out content of channel in terminal, mostly used for trouble shooting
-    countBases(sequence_ch)
+    sequence_ch_flat = sequence_ch.flatten()
+    // seperates bundeled multi-file output into single files before next process
+    // can also be incoprorated in line 56 if unflatened output is not needed anywhere, sequence_ch = splitSeqs(download_ch).flatten()
+    countBases(sequence_ch_flat)
 }
