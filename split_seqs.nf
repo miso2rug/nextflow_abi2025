@@ -48,16 +48,25 @@ process countBases {
         tail -n 1 ${fastafile} | wc -m > ${fastafile.getSimpleName()}_basecount.txt
         """
 }
-        // .getSimpleName() extracts name name before .fileextension
+
+process countRepeats {
+    publishDir params.out, mode: "copy", overwrite : true
+    input:
+        path fastafile
+    output:
+        path "${fastafile.getSimpleName()}_GCCGCG_count.txt"
+    script:
+        """
+        grep "GCCGCG" -o ${fastafile} | wc -l > ${fastafile.getSimpleName()}_GCCGCG_count.txt
+        """
+}
 
 workflow {
     download_ch = downloadFile()
     countSeqs(download_ch)
-    sequence_ch = splitSeqs(download_ch)
-    // sequence_ch.view()
-    // puts out content of channel in terminal, mostly used for trouble shooting
-    sequence_ch_flat = sequence_ch.flatten()
-    // seperates bundeled multi-file output into single files before next process
-    // can also be incoprorated in line 56 if unflatened output is not needed anywhere, sequence_ch = splitSeqs(download_ch).flatten()
-    countBases(sequence_ch_flat)
+    sequence_ch = splitSeqs(download_ch).flatten()
+    // sequence_ch.view() - puts out content of channel in terminal, mostly used for trouble shooting
+    // channel.flatten() - seperates bundeled multi-file output into single files before next process
+    countBases(sequence_ch)
+    countRepeats(sequence_ch)
 }
