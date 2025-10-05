@@ -45,7 +45,7 @@ process countBases {
         path "basecount.txt"
     script:
         """
-        tail -n 1 sequence_01.fasta | wc -m > basecount.txt
+        tail -n 1 ${fastafile} | wc -m > basecount.txt
         """
 }
 
@@ -54,5 +54,7 @@ workflow {
     download_ch = downloadFile()
     countSeqs(download_ch)
     sequence_ch = splitSeqs(download_ch)
+    sequence_ch.view()
+    // puts out content of channel in terminal, mostly used for trouble shooting
     countBases(sequence_ch)
 }
