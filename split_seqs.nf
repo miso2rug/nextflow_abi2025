@@ -37,8 +37,22 @@ process splitSeqs {
         """
 }
 
+process countBases {
+    publishDir params.out, mode: "copy", overwrite : true
+    input:
+        path fastafile
+    output:
+        path "basecount.txt"
+    script:
+        """
+        tail -n 1 sequence_01.fasta | wc -m > basecount.txt
+        """
+}
+
+
 workflow {
     download_ch = downloadFile()
     countSeqs(download_ch)
-    splitSeqs(download_ch)
+    sequence_ch = splitSeqs(download_ch)
+    countBases(sequence_ch)
 }
