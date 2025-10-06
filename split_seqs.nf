@@ -1,9 +1,14 @@
 params.out = "${projectDir}/output"
-params.url = "https://tinyurl.com/cqbatch1"
+params.cache = "${projectDir}/cache"
+//params.url = "https://tinyurl.com/cqbatch1"
 params.prefix = "sequence_"
+params.url = null
+params.indir = null
+
 
 process downloadFile {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     output:
         path "multi_seqs.fasta"
     script:
@@ -14,31 +19,34 @@ process downloadFile {
 
 process countSeqs {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     input:
         path infile
     output:
-        path "number_seqs.txt"
+        path "${infile.getSimpleName()}_number_seqs.txt"
     script:
         """
-        grep ">" ${infile} | wc -l > number_seqs.txt
+        grep ">" ${infile} | wc -l > ${infile.getSimpleName()}_number_seqs.txt
         """
 }
 
 process splitSeqs {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     input:
         path infile
     output:
-        path "${params.prefix}*.fasta"
+        path "${params.prefix}*_${infile.getSimpleName()}.fasta"
     script:
         """
-        split -l 2 -d --additional-suffix .fasta ${infile} ${params.prefix}
+        split -l 2 -d --additional-suffix _${infile.getSimpleName()}.fasta ${infile} ${params.prefix}
 
         """
 }
 
 process countBases {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     input:
         path fastafile
     output:
@@ -51,6 +59,7 @@ process countBases {
 
 process countRepeats {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     input:
         path fastafile
     output:
@@ -63,6 +72,7 @@ process countRepeats {
 
 process makeSummary {
     publishDir params.out, mode: "copy", overwrite : true
+    storeDir params.cache
     input:
         path fastafiles
     output:
@@ -75,13 +85,19 @@ process makeSummary {
 }
 
 workflow {
-    download_ch = downloadFile()
+    if (params.url != null && params.indir == null) {
+        download_ch = downloadFile()
+    }
+    else if (params.indir != null && params.url == null) {
+        download_ch = channel.fromPath("${params.indir}/*.fasta")
+    }
+    else {
+        print("ERROR: Please provide either --url or --indir")
+        System.exit(1)
+    }
     countSeqs(download_ch)
     sequence_ch = splitSeqs(download_ch).flatten()
-    // sequence_ch.view() - puts out content of channel in terminal, mostly used for trouble shooting
-    // channel.flatten() - seperates bundeled multi-file output into single files before next process
     countBases(sequence_ch)
     repeats_ch = countRepeats(sequence_ch).collect()
-    // channel.collect() reverse functional to .flatten()
     makeSummary(repeats_ch)
 }
